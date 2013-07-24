@@ -3,6 +3,7 @@ namespace NServiceBus.Gateway.Sending
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Audit;
     using Features;
     using Notifications;
     using ObjectBuilder;
@@ -21,6 +22,7 @@ namespace NServiceBus.Gateway.Sending
         public IManageReceiveChannels ChannelManager { get; set; }
         public IMessageNotifier Notifier { get; set; }
         public ISendMessages MessageSender { get; set; }
+        public MessageAuditer MessageAuditer { get; set; }
 
         public bool Handle(TransportMessage message)
         {
@@ -89,9 +91,9 @@ namespace NServiceBus.Gateway.Sending
 
             Notifier.RaiseMessageForwarded(Address.Local.ToString(), targetSite.Channel.Type, transportMessage);
 
-            if (UnicastBus != null && UnicastBus.ForwardReceivedMessagesTo != null &&
-                UnicastBus.ForwardReceivedMessagesTo != Address.Undefined)
-                MessageSender.Send(transportMessage, UnicastBus.ForwardReceivedMessagesTo);
+            // Will forward the message to the configured audit queue if the auditing feature is enabled.
+            MessageAuditer.ForwardMessageToAuditQueue(transportMessage);
+
         }
 
 
